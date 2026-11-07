@@ -44,7 +44,7 @@ function changesetProblems(file: string, source: string, packages: ReadonlySet<s
     // Changesets front matter is a YAML map of package names to release bumps.
     // The supported package-name syntax needs no YAML parser or new dependency.
     const match =
-      /^\s*(?:"([^"]+)"|'([^']+)'|([^\s'"#:]+))\s*:\s+(?:"([^"]+)"|'([^']+)'|([^\s'"#]+))(?:\s+#.*)?\s*$/.exec(
+      /^\s*(?:"([^"]+)"|'([^']+)'|([a-z0-9][a-z0-9._-]*))\s*:\s+(?:"([^"]+)"|'([^']+)'|([^\s'"#]+))(?:\s+#.*)?\s*$/.exec(
         line,
       );
     if (!match) {
@@ -93,7 +93,7 @@ describe("changeset metadata", () => {
       "---",
       '"releaseproof": patch',
       "'@releaseproof/core': minor # internal package",
-      "@releaseproof/action: major",
+      '"@releaseproof/action": major',
       "---",
       "Description",
     ].join("\r\n");
@@ -126,6 +126,12 @@ describe("changeset metadata", () => {
     ]);
     expect(
       changesetProblems("bad.md", '---\n"releaseproof": patch#other\n---\n', packages),
+    ).toEqual(["bad.md:2: malformed changeset entry"]);
+  });
+
+  it("requires quoted package keys when YAML reserves their first character", () => {
+    expect(
+      changesetProblems("bad.md", "---\n@releaseproof/action: major\n---\n", packages),
     ).toEqual(["bad.md:2: malformed changeset entry"]);
   });
 
